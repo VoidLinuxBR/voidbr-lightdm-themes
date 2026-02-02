@@ -1,3 +1,3 @@
-# voidbr-pkgfile
+# voidbr-lightdm-themes
 
-Template for VoidBR pkgmake/pkgfile packages
+Lightdm Themes for VoidLinuxBR 
