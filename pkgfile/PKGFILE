@@ -4,6 +4,9 @@ pkgname=voidbr-lightdm-themes
 pkgdesc="Lightdm Themes for VoidLinuxBR"
 pkgver=$(date +%Y%m%d)
 pkgrel=$(date +%H%M)
+provides=()
+replaces=()
+conflicts=()
 arch=('any')
 license=('MIT')
 #url="ssh://git@github.com/voidlinuxbr/${pkgname}"
@@ -11,17 +14,20 @@ url="https://github.com/voidlinuxbr/${pkgname}"
 source=("git+${url}.git")
 md5sums=('SKIP')
 makedepends=()
-depends=()
+depends=(ligthdm lightdm-gtk-greeter voidbr-tokyo-theme)
 
 package() {
-	# Verify default folder
-	if [ -d "${srcdir}/${pkgname}/${pkgname}" ]; then
-		InternalDir="${srcdir}/${pkgname}/${pkgname}"
-	else
-		InternalDir="${srcdir}/${pkgname}"
-	fi
+  # Verify default folder
+  if [ -d "${srcdir}/${pkgname}/${pkgname}" ]; then
+    InternalDir="${srcdir}/${pkgname}/${pkgname}"
+  elif [ -d "${srcdir}/${pkgname}" ]; then
+    InternalDir="${srcdir}/${pkgname}"
+  else
+    #local
+    InternalDir="${WORKDIR}"
+  fi
 
-	cd "${srcdir}/${pkgname}"
+  cd "${InternalDir}"
 	# Copiar a estrutura de /etc, /usr e /opt para /
 	local dirs=("boot" "etc" "opt" "usr" "var")
 	for dir in "${dirs[@]}"; do
