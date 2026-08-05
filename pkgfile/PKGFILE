@@ -14,7 +14,7 @@ url="https://github.com/voidlinuxbr/${pkgname}"
 source=("git+${url}.git")
 md5sums=('SKIP')
 makedepends=()
-depends=(ligthdm lightdm-gtk-greeter voidbr-tokyo-theme)
+depends=(lightdm lightdm-gtk-greeter voidbr-tokyo-theme)
 
 package() {
   # Verify default folder
