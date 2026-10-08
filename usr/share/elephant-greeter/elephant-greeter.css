@@ -1,0 +1,258 @@
+/*
+ * elephant-greeter.css - tema escuro VoidBR
+ * Paleta derivada do wallpaper oficial (carbono + bandeira do Brasil)
+ *
+ *   fundo       #0b0f14   cartão   rgba(13,17,23,.80)
+ *   texto       #e6edf3   apagado  #8b949e
+ *   verde       #00a651   amarelo  #ffdf00   azul #1d4ed8
+ *   vermelho    #f85149
+ *
+ * Carregado pelo elephant-greeter.py com prioridade USER, então
+ * sobrepõe o tema GTK instalado (Mint-Y-Dark, Tokyo, etc).
+ */
+
+@define-color vbr_bg        #0b0f14;
+@define-color vbr_card      rgba(13, 17, 23, 0.80);
+@define-color vbr_field     rgba(255, 255, 255, 0.05);
+@define-color vbr_field_hv  rgba(255, 255, 255, 0.08);
+@define-color vbr_border    rgba(255, 255, 255, 0.09);
+@define-color vbr_text      #e6edf3;
+@define-color vbr_muted     #8b949e;
+@define-color vbr_green     #00a651;
+@define-color vbr_green_hv  #19c26a;
+@define-color vbr_yellow    #ffdf00;
+@define-color vbr_blue      #1d4ed8;
+@define-color vbr_red       #f85149;
+
+* {
+  font-family: "Inter", "Noto Sans", "Cantarell", sans-serif;
+  color: @vbr_text;
+  outline: none;
+  -gtk-outline-radius: 0;
+}
+
+/* ---------- janela / fundo ---------- */
+
+#login_window {
+  background-color: @vbr_bg;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* escurece levemente a lateral direita, onde fica o cartão */
+#scrim {
+  background-image: linear-gradient(to right,
+                      rgba(0, 0, 0, 0.00) 45%,
+                      rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ---------- barra superior ---------- */
+
+#hostname_label {
+  font-size: 13px;
+  font-weight: 600;
+  color: @vbr_muted;
+  letter-spacing: 1px;
+}
+
+#icon {
+  opacity: 0.75;
+}
+
+/* ---------- relógio ---------- */
+
+#clock_label {
+  font-size: 84px;
+  font-weight: 200;
+  letter-spacing: -2px;
+  color: @vbr_text;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+#date_label {
+  font-size: 18px;
+  font-weight: 400;
+  color: @vbr_muted;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- cartão de login ---------- */
+
+#card {
+  background-color: @vbr_card;
+  border: 1px solid @vbr_border;
+  border-radius: 18px;
+  padding: 36px 34px 30px 34px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* faixa fina com as cores da bandeira no topo do cartão */
+#flag_bar {
+  min-height: 3px;
+  border-radius: 3px;
+  background-image: linear-gradient(to right,
+                      @vbr_green 0%, @vbr_green 40%,
+                      @vbr_yellow 40%, @vbr_yellow 70%,
+                      @vbr_blue 70%, @vbr_blue 100%);
+}
+
+#avatar_label {
+  min-width: 84px;
+  min-height: 84px;
+  border-radius: 50%;
+  font-size: 34px;
+  font-weight: 700;
+  color: #ffffff;
+  background-image: linear-gradient(135deg, @vbr_green, @vbr_blue);
+  border: 3px solid @vbr_yellow;
+  box-shadow: 0 6px 20px rgba(0, 166, 81, 0.35);
+}
+
+#message_label {
+  font-size: 20px;
+  font-weight: 600;
+  color: @vbr_text;
+}
+
+#message_label.error {
+  color: @vbr_red;
+}
+
+#caps_label {
+  font-size: 12px;
+  font-weight: 600;
+  color: @vbr_yellow;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: @vbr_muted;
+}
+
+/* ---------- campos ---------- */
+
+#card entry,
+#card combobox button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid @vbr_border;
+  background-color: @vbr_field;
+  background-image: none;
+  box-shadow: none;
+  color: @vbr_text;
+  font-size: 14px;
+}
+
+#card combobox button:hover,
+#card entry:hover {
+  background-color: @vbr_field_hv;
+}
+
+#card entry:focus,
+#card combobox button:focus {
+  border-color: @vbr_yellow;
+  box-shadow: 0 0 0 2px alpha(@vbr_yellow, 0.25);
+}
+
+#card entry image {
+  color: @vbr_muted;
+}
+
+#card entry image:hover {
+  color: @vbr_text;
+}
+
+#card combobox arrow {
+  color: @vbr_muted;
+  -gtk-icon-source: -gtk-icontheme("pan-down-symbolic");
+}
+
+/* menu suspenso das combos */
+menu, .menu, .context-menu {
+  background-color: #11161d;
+  border: 1px solid @vbr_border;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+menu menuitem {
+  min-height: 30px;
+  padding: 2px 12px;
+  border-radius: 6px;
+}
+
+menu menuitem:hover {
+  background-color: alpha(@vbr_green, 0.25);
+}
+
+/* ---------- botões ---------- */
+
+#login_button {
+  min-height: 42px;
+  border-radius: 10px;
+  border: none;
+  background-image: none;
+  background-color: @vbr_green;
+  box-shadow: 0 6px 18px rgba(0, 166, 81, 0.30);
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+#login_button label {
+  color: #ffffff;
+}
+
+#login_button:hover {
+  background-color: @vbr_green_hv;
+}
+
+#login_button:active {
+  background-color: #008a43;
+}
+
+#login_button:focus {
+  box-shadow: 0 0 0 2px alpha(@vbr_yellow, 0.55);
+}
+
+.power-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid @vbr_border;
+  background-image: none;
+  background-color: rgba(13, 17, 23, 0.70);
+  box-shadow: none;
+}
+
+.power-button image {
+  color: @vbr_muted;
+}
+
+.power-button:hover {
+  background-color: rgba(30, 36, 44, 0.90);
+}
+
+.power-button:hover image {
+  color: @vbr_text;
+}
+
+#poweroff_button:hover {
+  border-color: alpha(@vbr_red, 0.6);
+}
+
+#poweroff_button:hover image {
+  color: @vbr_red;
+}
+
+tooltip {
+  background-color: #11161d;
+  border: 1px solid @vbr_border;
+  border-radius: 8px;
+}
