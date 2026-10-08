@@ -17,17 +17,17 @@ makedepends=()
 depends=(lightdm lightdm-gtk-greeter voidbr-tokyo-theme "python>=3.8" cage python3-gobject)
 
 package() {
-  # Verify default folder
-  if [ -d "${srcdir}/${pkgname}/${pkgname}" ]; then
-    InternalDir="${srcdir}/${pkgname}/${pkgname}"
-  elif [ -d "${srcdir}/${pkgname}" ]; then
-    InternalDir="${srcdir}/${pkgname}"
-  else
-    #local
-    InternalDir="${WORKDIR}"
-  fi
+	# Verify default folder
+	if [ -d "${srcdir}/${pkgname}/${pkgname}" ]; then
+		InternalDir="${srcdir}/${pkgname}/${pkgname}"
+	elif [ -d "${srcdir}/${pkgname}" ]; then
+		InternalDir="${srcdir}/${pkgname}"
+	else
+		#local
+		InternalDir="${WORKDIR}"
+	fi
 
-  cd "${InternalDir}"
+	cd "${InternalDir}"
 	# Copiar a estrutura de /etc, /usr e /opt para /
 	local dirs=("boot" "etc" "opt" "usr" "var")
 	for dir in "${dirs[@]}"; do
@@ -53,10 +53,12 @@ pre_install() {
 
 post_install() {
 	log "Finalizando instalação"
+    chown lightdm:lightdm /var/lib/lightdm -R >/dev/null 2>&1 || true
 }
 
 pre_upgrade() {
 	log "Iniciando upgrade"
+    chown lightdm:lightdm /var/lib/lightdm -R >/dev/null 2>&1 || true
 }
 
 post_upgrade() {
