@@ -7,8 +7,10 @@
 # http://www.mattfischer.com/blog/archives/5
 
 import configparser
+import datetime
 import gi
 import os
+import socket
 import sys
 from pathlib import Path
 
@@ -26,6 +28,13 @@ DEFAULT_SESSION = "sway"
 UI_FILE_LOCATION = "/usr/local/share/elephant-greeter/elephant-greeter.ui"
 WAYLAND_ICON_LOCATION = "/usr/local/share/elephant-greeter/img/wayland.png"
 X_ICON_LOCATION = "/usr/local/share/elephant-greeter/img/X.png"
+CSS_FILE_LOCATION = "/usr/share/elephant-greeter/elephant-greeter.css"
+BACKGROUND_LOCATION = ""
+
+WEEKDAYS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira",
+            "sexta-feira", "sábado", "domingo"]
+MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+          "agosto", "setembro", "outubro", "novembro", "dezembro"]
 
 # read the cache
 cache_dir = (Path.home() / ".cache" / "elephant-greeter")
@@ -71,10 +80,89 @@ def read_config(gtk_settings, config_file="/etc/lightdm/elephant-greeter.conf"):
 
     if "Greeter" in config:
         global DEFAULT_SESSION, UI_FILE_LOCATION, X_ICON_LOCATION, WAYLAND_ICON_LOCATION
+        global CSS_FILE_LOCATION, BACKGROUND_LOCATION
         DEFAULT_SESSION = config["Greeter"].get("default-session", DEFAULT_SESSION)
         UI_FILE_LOCATION = config["Greeter"].get("ui-file-location", UI_FILE_LOCATION)
         X_ICON_LOCATION = config["Greeter"].get("x-icon-location", X_ICON_LOCATION)
         WAYLAND_ICON_LOCATION = config["Greeter"].get("wayland-icon-location", WAYLAND_ICON_LOCATION)
+        CSS_FILE_LOCATION = config["Greeter"].get("css-file-location", CSS_FILE_LOCATION)
+        BACKGROUND_LOCATION = config["Greeter"].get("background", BACKGROUND_LOCATION)
+
+
+def load_css():
+    """Load the theme CSS and the background image (if configured)."""
+    screen = Gdk.Screen.get_default()
+    priority = Gtk.STYLE_PROVIDER_PRIORITY_USER
+
+    if CSS_FILE_LOCATION and os.path.isfile(CSS_FILE_LOCATION):
+        provider = Gtk.CssProvider()
+        try:
+            provider.load_from_path(CSS_FILE_LOCATION)
+            Gtk.StyleContext.add_provider_for_screen(screen, provider, priority)
+        except GLib.Error as err:
+            print(f"failed to load css: {err}", file=sys.stderr)
+
+    if BACKGROUND_LOCATION and os.path.isfile(BACKGROUND_LOCATION):
+        uri = GLib.filename_to_uri(BACKGROUND_LOCATION, None)
+        provider = Gtk.CssProvider()
+        css = f'#login_window {{ background-image: url("{uri}"); }}'
+        try:
+            provider.load_from_data(css.encode())
+            Gtk.StyleContext.add_provider_for_screen(screen, provider, priority + 1)
+        except GLib.Error as err:
+            print(f"failed to load background: {err}", file=sys.stderr)
+
+
+def update_clock():
+    """Refresh the clock and date labels (pt_BR, independent of locale)."""
+    now = datetime.datetime.now()
+    if clock_label is not None:
+        clock_label.set_text(now.strftime("%H:%M"))
+    if date_label is not None:
+        date_label.set_text(f"{WEEKDAYS[now.weekday()]}, {now.day} de {MONTHS[now.month - 1]}")
+    return True
+
+
+def set_message(text, error=False):
+    """Show a message in the card; error=True paints it red via CSS."""
+    message_label.set_text(text)
+    ctx = message_label.get_style_context()
+    if error:
+        ctx.add_class("error")
+    else:
+        ctx.remove_class("error")
+
+
+def update_avatar(username):
+    """Show the first letter of the user's display name in the avatar."""
+    if avatar_label is None or not username:
+        return
+    display = username
+    for u in LightDM.UserList().get_users():
+        if u.get_name() == username:
+            display = u.get_display_name() or username
+            break
+    avatar_label.set_text(display[:1].upper())
+
+
+def password_icon_press(entry, icon_pos, event):
+    """Toggle the password visibility with the eye icon."""
+    visible = not entry.get_visibility()
+    entry.set_visibility(visible)
+    entry.set_icon_from_icon_name(
+        Gtk.EntryIconPosition.SECONDARY,
+        "view-conceal-symbolic" if visible else "view-reveal-symbolic")
+    entry.set_icon_tooltip_text(
+        Gtk.EntryIconPosition.SECONDARY,
+        "Ocultar senha" if visible else "Mostrar senha")
+
+
+def update_caps_lock(keymap=None):
+    """Show a warning while Caps Lock is on."""
+    if caps_label is None:
+        return
+    keymap = keymap or Gdk.Keymap.get_for_display(Gdk.Display.get_default())
+    caps_label.set_visible(keymap.get_caps_lock_state())
 
 
 def write_cache():
@@ -103,7 +191,7 @@ def start_session():
     write_cache()
     if not greeter.start_session_sync(session):
         print("failed to start session", file=sys.stderr)
-        message_label.set_text("Failed to start Session")
+        set_message("Falha ao iniciar a sessão", error=True)
 
 
 def dm_show_prompt_cb(greeter, text, prompt_type=None, **kwargs):
@@ -121,7 +209,7 @@ def dm_show_prompt_cb(greeter, text, prompt_type=None, **kwargs):
 def dm_show_message_cb(greeter, text, message_type=None, **kwargs):
     """Show the message from LightDM to the user."""
     print(f"message from LightDM: {text}", file=sys.stderr)
-    message_label.set_text(text)
+    set_message(text, error=(message_type == LightDM.MessageType.ERROR))
 
 
 def dm_authentication_complete_cb(greeter):
@@ -140,7 +228,8 @@ def dm_authentication_complete_cb(greeter):
         else:
             # autentication complete, but unsucessful:
             # likely, the password was wrong
-            message_label.set_text("Login failed")
+            set_message("Senha incorreta. Tente novamente.", error=True)
+            password_entry.grab_focus()
             print("login failed", file=sys.stderr)
 
 
@@ -158,6 +247,8 @@ def user_change_handler(widget, data=None):
 
     set_password_visibility(True)
     password_entry.set_text("")
+    update_avatar(username)
+    set_message("Bem-vindo de volta!")
     cache.set("greeter", "last-user", username)
 
 
@@ -188,11 +279,18 @@ def poweroff_click_handler(widget, data=None):
         LightDM.shutdown()
 
 
+def reboot_click_handler(widget, data=None):
+    """Event handler for clicking the Reboot button."""
+    if LightDM.get_can_restart():
+        LightDM.restart()
+
+
 if __name__ == "__main__":
     builder = Gtk.Builder()
     greeter = LightDM.Greeter()
     settings = Gtk.Settings.get_default()
     read_config(settings)
+    load_css()
     cursor = Gdk.Cursor(Gdk.CursorType.LEFT_PTR)
     greeter_session_type = os.environ.get("XDG_SESSION_TYPE", None)
 
@@ -214,6 +312,13 @@ if __name__ == "__main__":
     login_button = builder.get_object("login_button")
     poweroff_button = builder.get_object("poweroff_button")
     icon = builder.get_object("icon")
+    # optional widgets (an older .ui without them still works)
+    reboot_button = builder.get_object("reboot_button")
+    hostname_label = builder.get_object("hostname_label")
+    clock_label = builder.get_object("clock_label")
+    date_label = builder.get_object("date_label")
+    avatar_label = builder.get_object("avatar_label")
+    caps_label = builder.get_object("caps_label")
 
     # connect to greeter
     greeter.connect_to_daemon_sync()
@@ -225,16 +330,27 @@ if __name__ == "__main__":
     password_entry.set_visibility(False)
     if greeter_session_type is not None:
         print(f"greeter session type: {greeter_session_type}", file=sys.stderr)
-        message_label.set_text("Welcome Back!")
         if greeter_session_type.lower() == "wayland":
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(WAYLAND_ICON_LOCATION, 32, 32, False)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(WAYLAND_ICON_LOCATION, 20, 20, True)
             icon.set_from_pixbuf(pixbuf)
         elif greeter_session_type.lower() == "x11":
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(X_ICON_LOCATION, 32, 32, False)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(X_ICON_LOCATION, 20, 20, True)
             icon.set_from_pixbuf(pixbuf)
+    set_message("Bem-vindo de volta!")
+
+    if hostname_label is not None:
+        hostname_label.set_text(socket.gethostname().upper())
+    update_clock()
+    GLib.timeout_add_seconds(1, update_clock)
 
     # register handlers for our UI elements
     poweroff_button.connect("clicked", poweroff_click_handler)
+    if reboot_button is not None:
+        reboot_button.connect("clicked", reboot_click_handler)
+    password_entry.connect("icon-press", password_icon_press)
+    keymap = Gdk.Keymap.get_for_display(Gdk.Display.get_default())
+    keymap.connect("state-changed", update_caps_lock)
+    update_caps_lock(keymap)
     usernames_box.connect("changed", user_change_handler)
     password_entry.connect("activate", login_click_handler)
     login_button.connect("clicked", login_click_handler)
